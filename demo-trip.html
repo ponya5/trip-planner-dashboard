@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pacific Coast Highway Demo — Trip Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --border:#2a2f3a;
+    --text:#e8eaed; --sub:#9aa3b2; --accent:#4C9AFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body.map-mode{overflow:hidden;}
+  body.details-mode{overflow-y:auto;}
+  #topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:16px;padding:10px 16px;background:#0b0d12;border-bottom:1px solid var(--border);}
+  #topbar h1{font-size:15px;margin:0;font-weight:700;white-space:nowrap;}
+  #topbar .sub{font-size:11.5px;color:var(--sub);}
+  #topbar .tabs{margin-left:auto;display:flex;gap:6px;}
+  .tab-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;}
+  .tab-btn.active{background:var(--accent);border-color:var(--accent);color:#08101f;}
+
+  #app{display:flex;width:100%;}
+  body.map-mode #app{height:calc(100vh - 49px);}
+  #pane-map{display:flex;flex:1;min-height:0;}
+  #pane-details{display:none;max-width:1000px;margin:0 auto;padding:20px 20px 80px;}
+  body.details-mode #pane-map{display:none;}
+  body.details-mode #pane-details{display:block;}
+
+  #sidebar{width:340px;min-width:260px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:16px;}
+  #resizer{width:6px;cursor:col-resize;background:var(--border);flex-shrink:0;}
+  #resizer:hover{background:var(--accent);}
+  #map-wrap{flex:1;position:relative;min-width:0;}
+  #map{position:absolute;inset:0;}
+  @media (max-width:900px){
+    #pane-map{flex-direction:column;}
+    #sidebar{width:100%;max-height:45vh;border-right:none;border-bottom:1px solid var(--border);}
+    #resizer{width:100%;height:6px;cursor:row-resize;}
+  }
+
+  .side-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;}
+  .side-card h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0 0 10px;}
+  .stat-row{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;}
+  .stat-row b{color:var(--text);}
+  .ctrl-btn{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:11.5px;cursor:pointer;margin:2px 4px 2px 0;}
+  .ctrl-btn.on{background:var(--accent);border-color:var(--accent);color:#08101f;}
+  .speed-btn{font-size:10.5px;padding:4px 8px;}
+
+  .lg-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;cursor:pointer;}
+  .lg-row.off{opacity:.35;}
+  .lg-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+  .lg-km{margin-left:auto;color:var(--sub);font-size:10.5px;}
+
+  .day-group{margin-bottom:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .day-header{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;background:var(--panel2);font-size:12.5px;font-weight:600;flex-wrap:wrap;}
+  .day-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#08101f;font-weight:700;}
+  .km-badge{font-size:9.5px;color:#0b1220;background:var(--sub);padding:1px 7px;border-radius:999px;font-weight:700;white-space:nowrap;}
+  .day-header .date{color:var(--sub);font-weight:400;margin-left:auto;font-size:10.5px;text-align:right;}
+  .day-body{display:none;padding:8px 11px 12px;}
+  .day-group.open .day-body{display:block;}
+  .sched{font-size:12px;}
+  .s-row{display:grid;grid-template-columns:44px 20px 1fr;gap:6px;padding:3px 0;cursor:pointer;align-items:start;}
+  .s-row:hover{color:var(--accent);}
+  .s-time{color:var(--sub);font-size:10.5px;}
+  .tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:999px;margin-left:6px;vertical-align:middle;}
+  .tag.sleep{background:#2a3a2a;color:#7be08a;}
+  .tag.watch{background:#3a2415;color:#ffab5c;}
+  .tag.offroad{background:#3a1e2a;color:#ff8fa8;}
+  .tag.shop{background:#1e2a3a;color:#7fc4ff;}
+  .gmaps-btn{display:inline-block;margin-top:6px;font-size:11px;color:var(--accent);text-decoration:none;border:1px solid var(--border);padding:5px 9px;border-radius:7px;}
+
+  .note-card{font-size:11.5px;color:var(--sub);line-height:1.5;}
+  .toggle-line{display:block;margin-top:8px;font-size:11.5px;}
+
+  .quick-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;}
+  .quick-nav a{font-size:11.5px;color:var(--sub);border:1px solid var(--border);padding:5px 10px;border-radius:999px;text-decoration:none;}
+  details.details-section{background:var(--panel2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;}
+  details.details-section summary{cursor:pointer;padding:12px 16px;font-weight:700;font-size:13.5px;list-style:none;}
+  details.details-section summary::-webkit-details-marker{display:none;}
+  details.details-section summary::before{content:'▸ ';color:var(--accent);}
+  details.details-section[open] summary::before{content:'▾ ';}
+  .section-body{padding:0 16px 16px;font-size:13px;line-height:1.6;}
+  .info-box{background:#132033;border:1px solid #204066;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:10px;}
+  .warn-box{background:#2a1e12;border:1px solid #5a3a1e;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:10px;}
+  table.price-table, table.route-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px;}
+  table.price-table th, table.price-table td, table.route-table th, table.route-table td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);}
+  .num{text-align:right !important;}
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .day-chip{font-size:10px;color:#0b1220;background:var(--accent);padding:2px 8px;border-radius:999px;font-weight:700;white-space:nowrap;}
+  .price{font-weight:700;font-size:13px;}
+  .price.premium{color:var(--sub);font-weight:400;font-size:11.5px;}
+  .foot-note{font-size:11px;color:var(--sub);margin-top:6px;}
+
+  .explain{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12.5px;line-height:1.6;margin-bottom:16px;}
+  .ex-row{display:flex;gap:10px;margin-bottom:8px;}
+  .ex-key{width:70px;flex-shrink:0;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .swatch-plan{width:14px;height:0;border-top:2px dotted #8fa3bd;display:inline-block;}
+  .swatch-live{width:14px;height:4px;background:var(--accent);border-radius:2px;display:inline-block;}
+
+  .mlg{font-size:11px;color:var(--text);display:flex;align-items:center;gap:6px;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .msw{width:12px;height:3px;border-radius:2px;flex-shrink:0;}
+  .mdiv{height:1px;background:var(--border);margin:6px 0;}
+  #map-legend{position:absolute;bottom:10px;left:10px;background:rgba(11,13,18,.88);border:1px solid var(--border);border-radius:8px;padding:8px 10px;max-width:230px;z-index:400;}
+  #route-status{position:absolute;top:10px;right:10px;background:rgba(11,13,18,.88);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--sub);z-index:400;transition:opacity .5s;}
+  .legend-note{font-size:11px;color:var(--sub);line-height:1.5;padding-top:10px;border-top:1px solid var(--border);margin-top:6px;}
+
+  @keyframes dashflow{to{stroke-dashoffset:-400;}}
+  .route-flow{animation:dashflow 12s linear infinite;}
+  .arrow-ico{font-size:12px;text-align:center;line-height:13px;}
+  .poi-popup h3{margin:0 0 4px;font-size:14px;color:#111;}
+  .poi-popup .meta{font-size:11px;color:#555;margin-bottom:6px;}
+  .poi-popup .desc{font-size:12.5px;color:#222;line-height:1.4;}
+  .poi-popup .pill{display:inline-block;font-size:9.5px;background:#eee;color:#333;padding:2px 7px;border-radius:999px;margin:4px 4px 0 0;}
+  .leaflet-popup-content-wrapper{border-radius:8px;}
+</style>
+</head>
+<body class="map-mode">
+
+  <div id="topbar">
+    <div>
+      <h1>Pacific Coast Highway Demo</h1>
+      <div class="sub">4 days · 2 people · 1 rental car · DEMO TRIP — shows every dashboard feature</div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-map">Map &amp; Routes</button>
+      <button class="tab-btn" id="tab-details">Full Trip Plan</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <div id="pane-map">
+      <div id="sidebar">
+
+        <div class="side-card" id="flight-card">
+          <h2>This demo</h2>
+          <div style="font-size:12px;color:var(--sub);line-height:1.5;">This is a sample dashboard generated by the <b>trip-dashboard</b> skill, not a real booking. It's a short San Francisco → Big Sur loop chosen because it exercises every feature: live road routing, an honest out-and-back leg, a different-road return, playback, hotels, budget, and an optional add-on layer.</div>
+        </div>
+
+        <div class="side-card">
+          <h2>Trip totals</h2>
+          <div class="stat-row"><span>Planned driving</span><b id="stat-planned-km">—</b></div>
+          <div class="stat-row"><span>Live routed</span><b id="total-km">calculating…</b></div>
+          <div class="stat-row"><span>Driving days</span><b id="stat-driving-days">—</b></div>
+          <div style="margin-top:8px;">
+            <button class="ctrl-btn on" id="btn-anim">⏸ Pause flow</button>
+            <button class="ctrl-btn" id="btn-drive">▶ Drive whole trip</button>
+            <button class="ctrl-btn" id="btn-reveal">✨ Replay reveal</button>
+            <button class="ctrl-btn" id="btn-fit">Fit all</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--sub);">Playback speed</div>
+          <div id="speed-controls">
+            <button class="ctrl-btn speed-btn" data-speed="0.25">0.25×</button>
+            <button class="ctrl-btn speed-btn" data-speed="0.5">0.5×</button>
+            <button class="ctrl-btn speed-btn on" data-speed="1">1×</button>
+            <button class="ctrl-btn speed-btn" data-speed="2">2×</button>
+            <button class="ctrl-btn speed-btn" data-speed="4">4×</button>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <h2>Days — click to isolate</h2>
+          <div id="legend-rows"></div>
+          <button class="ctrl-btn" id="btn-showall" style="margin-top:8px;">Show all days</button>
+        </div>
+
+        <div class="side-card note-card">
+          All paved highway (US-1 and US-101) — no 4x4 needed. Highway 1 through Big Sur is a two-lane cliffside road that closes for landslide repairs most winters; check Caltrans QuickMap before you go if traveling Nov–Apr.
+          <label class="toggle-line"><input type="checkbox" id="alt-toggle"> Show optional extras near the route</label>
+        </div>
+
+        <div id="day-groups"></div>
+
+        <div class="legend-note">
+          Pulsing markers are overnight stops. Arrowheads and flowing dashes show the direction of travel. Click any stop for details and a Google Maps link with turn-by-turn navigation, road numbers and live traffic.
+        </div>
+      </div>
+
+      <div id="resizer"></div>
+
+      <div id="map-wrap">
+        <div id="map"></div>
+        <div id="route-status"></div>
+        <div id="map-legend"></div>
+      </div>
+    </div>
+
+    <div id="pane-details">
+      <div class="quick-nav" id="quick-nav"></div>
+
+      <details class="details-section" id="sec-overview" open>
+        <summary>Trip overview</summary>
+        <div class="section-body">
+          <div class="explain">
+            <h2 style="font-size:12.5px;margin:0 0 8px;">Two kinds of route on this map</h2>
+            <div class="ex-row">
+              <div class="ex-key"><span class="swatch-plan"></span>Planned</div>
+              <div>The <b>grey dotted line</b> is the plan as written: chosen stops joined in order, straight point-to-point. It shows the <i>intent</i> of the day but ignores roads, so its distance is a rough estimate.</div>
+            </div>
+            <div class="ex-row">
+              <div class="ex-key"><span class="swatch-live"></span>Live</div>
+              <div>The <b>thick coloured line</b> is the real drivable route, calculated on load by a routing engine that follows actual OpenStreetMap roads. Its km and drive time are <b>measured, not estimated</b>.</div>
+            </div>
+            <div style="margin-top:6px;padding-top:7px;border-top:1px solid #2e3a4d;">If a live route ever looks like a huge, nonsensical detour, this dashboard has already checked it against the straight-line distance and fallen back to the planned line rather than show you something wrong — see Day 2 below for why that check matters even on a well-mapped route like this one.</div>
+          </div>
+          <table class="route-table">
+            <tr><th>Field</th><th>Detail</th></tr>
+            <tr><td>Shape</td><td>Loop out of San Francisco. Day 1 goes south on coastal Highway 1; Day 3 returns on inland Highway 101 — a different road, not a repeat. The one honest exception is Day 2: Big Sur has no through road, so that leg is a real out-and-back on Highway 1, called out below rather than hidden.</td></tr>
+            <tr><td>Driving</td><td>≈450 km total over 3 driving days, plus a full rest/city day in San Francisco with no driving.</td></tr>
+            <tr><td>Surface</td><td>100% paved. No 4x4 or off-road sections — this demo intentionally shows the "easy" case.</td></tr>
+          </table>
+          <div class="warn-box">Highway 1 through Big Sur is single-lane in places and closes for days-to-months at a time after winter storms (most recently significant closures in 2023–2024 near Regent's Slide and Rocky Creek). If it's closed, Day 2 has no real substitute — Big Sur is the reason for that day, not a detour — so check Caltrans QuickMap (quickmap.dot.ca.gov) before booking non-refundable Monterey nights.</div>
+        </div>
+      </details>
+
+      <details class="details-section" id="sec-itinerary">
+        <summary>Day-by-day itinerary</summary>
+        <div class="section-body" id="itinerary-body"></div>
+      </details>
+
+      <details class="details-section" id="sec-routes">
+        <summary>Routes — distance, time, links</summary>
+        <div class="section-body">
+          <table class="route-table" id="route-table"><tr><th>Day</th><th>Route</th><th>Planned</th><th>Live</th><th>Link</th></tr></table>
+        </div>
+      </details>
+
+      <details class="details-section" id="sec-vehicle">
+        <summary>Vehicle / transport options</summary>
+        <div class="section-body">
+          <table class="price-table">
+            <tr><th>Option</th><th>Notes</th><th>Price</th></tr>
+            <tr><td>Compact sedan</td><td>Fine for this trip — all paved, no cargo needs</td><td class="num">$45–65/day</td></tr>
+            <tr><td>Mid-size SUV</td><td>More comfortable for the Highway 1 curves, better trunk space</td><td class="num">$65–90/day</td></tr>
+            <tr><td>Convertible</td><td>The classic PCH choice if the weather cooperates — coastal fog is common even in summer</td><td class="num">$85–130/day</td></tr>
+          </table>
+          <div class="foot-note">Pick up and drop off at SFO or in the city. Budget ≈$70 for gas over the whole loop at current CA prices.</div>
+        </div>
+      </details>
+
+      <details class="details-section" id="sec-sleep">
+        <summary>Hotels &amp; sleeping places — prices and booking</summary>
+        <div class="section-body">
+          <div class="cards-grid" id="hotel-cards"></div>
+        </div>
+      </details>
+
+      <details class="details-section" id="sec-budget">
+        <summary>Budget</summary>
+        <div class="section-body">
+          <table class="price-table">
+            <tr><th>Category</th><th>Per person (3 nights, 2 people)</th></tr>
+            <tr><td>Rental car + gas</td><td class="num">$140–220</td></tr>
+            <tr><td>Hotels (split 2 ways)</td><td class="num">$300–430</td></tr>
+            <tr><td>Food &amp; drink</td><td class="num">$180–270</td></tr>
+            <tr><td>Activities (17-Mile Drive toll, park fees)</td><td class="num">$25–45</td></tr>
+            <tr><td><b>Total per person</b></td><td class="num"><b>≈$645–965</b></td></tr>
+          </table>
+        </div>
+      </details>
+
+      <details class="details-section" id="sec-food">
+        <summary>Food &amp; drink</summary>
+        <div class="section-body">Monterey/Carmel: fresh seafood on Fisherman's Wharf, a Carmel Valley wine-tasting detour if you have an extra afternoon. San Francisco: Ferry Building Marketplace for a browse-and-graze lunch, Mission-district taquerias, North Beach for Italian.</div>
+      </details>
+
+      <details class="details-section" id="sec-checklist">
+        <summary>Pre-trip checklist</summary>
+        <div class="section-body">
+          <b>1 week out:</b> check Caltrans QuickMap for Highway 1 status through Big Sur; confirm Monterey hotel parking.<br>
+          <b>48 hours out:</b> check the coastal fog/weather forecast — mornings are often overcast even in summer; reconfirm restaurant reservations in Carmel if food is a priority.
+        </div>
+      </details>
+
+      <details class="details-section" id="sec-packing">
+        <summary>Packing</summary>
+        <div class="section-body">Layers — coastal fog can be 15°C/60°F even when inland SF is warm. A light rain shell, walking shoes for the McWay Falls trail, sunglasses for the 101 return leg.</div>
+      </details>
+
+      <details class="details-section" id="sec-safety">
+        <summary>Safety, weather &amp; fallbacks</summary>
+        <div class="section-body">If Highway 1 is closed south of Monterey, Big Sur is not reachable by any reasonable detour that day — the nearest alternative is to substitute a Carmel Valley wine day and skip McWay Falls, rather than force the drive. Nearest hospital to Monterey: Community Hospital of the Monterey Peninsula.</div>
+      </details>
+
+      <details class="details-section" id="sec-alternates">
+        <summary>Optional extras / alternates</summary>
+        <div class="section-body" id="alt-cards"></div>
+      </details>
+
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   TRIP CONTENT — this is the demo's data. Replace this whole
+   object for a real trip; everything below it is the reusable
+   engine shipped with the trip-dashboard skill.
+   ============================================================ */
+const TRIP = {
+  title: "Pacific Coast Highway Demo",
+  subtitle: "4 days · 2 people · 1 rental car · DEMO TRIP",
+  days: [
+    { id:1, label:"Day 1 · Fri", date:"San Francisco → Santa Cruz → Monterey", color:"#4C9AFF", drive:"≈190 km / 3h", km:190,
+      summary:"South on coastal Highway 1 — the classic PCH run, with a boardwalk stop in Santa Cruz before settling into Monterey for two nights.",
+      pois:[
+        {name:"Golden Gate Bridge", lat:37.8199, lon:-122.4783, ico:"🌉", t:"09:00", desc:"Quick photo stop before heading south.", tips:"Vista Point on the north side has the classic view back at the bridge."},
+        {name:"Half Moon Bay", lat:37.4636, lon:-122.4286, ico:"🏖", t:"10:15", desc:"Coastal town, good coffee stop.", tips:"Popular on weekends — park early."},
+        {name:"Santa Cruz Beach Boardwalk", lat:36.9641, lon:-122.0208, ico:"🎡", t:"12:00", desc:"Classic California boardwalk and amusement park right on the beach.", tips:"Lunch here — plenty of casual food stalls."},
+        {name:"Monterey", lat:36.6002, lon:-121.8947, ico:"🛏", t:"16:00", desc:"Base for two nights — Cannery Row, the aquarium, and the Big Sur day trip.", sleep:true, tips:"Check in, then walk Cannery Row before dinner."}
+      ]
+    },
+    { id:2, label:"Day 2 · Sat", date:"Monterey → Big Sur → Monterey (out-and-back)", color:"#36B37E", drive:"≈150 km / 3.5h", km:150,
+      summary:"Big Sur has no through road south without a multi-hour inland detour, so this is a genuine out-and-back on Highway 1 — called out honestly rather than dressed up as a loop. Carmel and the 17-Mile Drive bookend it.",
+      pois:[
+        {name:"Carmel-by-the-Sea", lat:36.5552, lon:-121.9233, ico:"🏘", t:"08:30", desc:"Storybook village, boutique shops, a famously dog-friendly beach.", tips:"Early is better — parking fills up by mid-morning."},
+        {name:"Bixby Creek Bridge", lat:36.3714, lon:-121.9019, ico:"🌉", t:"09:45", desc:"The most photographed bridge on the California coast.", watch:true, tips:"Pull-outs on both sides; can be foggy in the morning."},
+        {name:"McWay Falls", lat:36.1594, lon:-121.6702, ico:"💧", t:"11:00", desc:"An 80-foot waterfall dropping onto the beach at Julia Pfeiffer Burns State Park — short easy walk from the parking area.", tips:"Small lot fills fast; arrive before 10:30 on weekends."},
+        {name:"Monterey", lat:36.6002, lon:-121.8947, ico:"🛏", t:"15:30", desc:"Back to base for the second night.", sleep:true, tips:"Second night — no need to repack."}
+      ]
+    },
+    { id:3, label:"Day 3 · Sun", date:"Monterey → San Francisco (via US-101, inland)", color:"#FFC400", drive:"≈180 km / 2h", km:180,
+      summary:"The return leg deliberately uses inland US-101 through Gilroy and San Jose instead of retracing Day 1's coastal Highway 1 — a different road, not a repeat, with an outlet-mall stop on the way.",
+      pois:[
+        {name:"Monterey", lat:36.6002, lon:-121.8947, ico:"⛰", t:"09:00", desc:"Check out, head north on inland US-101.", tips:"Fill up before leaving — fewer stations directly on this stretch of 101."},
+        {name:"Gilroy Premium Outlets", lat:37.0038, lon:-121.5892, ico:"🛍", t:"11:00", desc:"Large outlet mall, a common practical stop on this drive.", shop:true, tips:"Good lunch options on-site."},
+        {name:"San Francisco", lat:37.7749, lon:-122.4194, ico:"🛏", t:"13:30", desc:"Check into the city hotel for the last two nights.", sleep:true, tips:"Drop the car at the hotel garage — you won't need it again until departure."}
+      ]
+    },
+    { id:4, label:"Day 4 · Mon", date:"San Francisco — full day, no driving", color:"#FF5630", drive:"local only", km:0,
+      summary:"Rest day on foot and public transit — no driving, car stays parked.",
+      pois:[
+        {name:"Ferry Building Marketplace", lat:37.7955, lon:-122.3937, ico:"🛍", t:"10:00", desc:"Food hall and farmers-market stalls right on the Embarcadero.", shop:true, tips:"Great for a graze-your-way-through lunch."},
+        {name:"Golden Gate Park", lat:37.7694, lon:-122.4862, ico:"🌳", t:"13:00", desc:"Japanese Tea Garden, de Young Museum, or just a walk.", tips:"Rent bikes if you want to cover more ground."},
+        {name:"Fisherman's Wharf", lat:37.8080, lon:-122.4177, ico:"🍽", t:"17:00", desc:"Evening seafood dinner and a walk along the pier before departure the next day.", tips:"Touristy but the sea-lion colony at Pier 39 is genuinely fun."}
+      ]
+    }
+  ],
+  hotels: [
+    { name:"Monterey — mid-range hotel", nights:"Nights 1 & 2", priceLow:180, priceHigh:260, desc:"Walkable to Cannery Row and the aquarium; ask for a room with parking included.", bookingLinks:[{label:"Compare on Booking.com", url:"https://www.booking.com/city/us/monterey.html"}] },
+    { name:"San Francisco — mid-range hotel", nights:"Nights 3 & 4", priceLow:220, priceHigh:320, desc:"Union Square or the Embarcadero puts you walking distance from the Ferry Building.", bookingLinks:[{label:"Compare on Booking.com", url:"https://www.booking.com/city/us/san-francisco.html"}] }
+  ],
+  alternates: [
+    { name:"Hearst Castle", lat:35.6852, lon:-121.1697, ico:"🏰", desc:"About 2.5h further south of McWay Falls — worth it only if you extend Day 2 into an overnight in Cambria instead of returning to Monterey." },
+    { name:"Pinnacles National Park", lat:36.4906, lon:-121.1825, ico:"🏔", desc:"A detour off the Day 3 return route — rock formations and condor viewing, if you want to break up the drive back." },
+    { name:"17-Mile Drive (Pebble Beach)", lat:36.5725, lon:-121.9486, ico:"🌊", desc:"Private scenic toll road between Monterey and Carmel — an easy paid add-on to Day 2's morning." }
+  ]
+};
+
+/* ============================================================
+   ENGINE — generic, shipped with the skill. Don't rewrite per trip.
+   ============================================================ */
+
+const map = L.map('map', {zoomControl:true}).setView([36.9,-122.2], 8);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:18, attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+function poiIcon(color, poi, delay){
+  const pulse = poi.sleep ? `<div style="position:absolute;inset:-4px;border-radius:50%;border:2px solid ${color};animation:pulseRing 2s ease-out ${delay}s infinite;"></div>` : '';
+  return L.divIcon({
+    className:'',
+    html:`<div style="position:relative;width:26px;height:26px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #0f1115;box-shadow:0 0 0 2px rgba(255,255,255,.15);">${poi.ico||'📍'}${pulse}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13], popupAnchor:[0,-14]
+  });
+}
+function bearing(a,b){
+  const dy=b[0]-a[0], dx=(b[1]-a[1])*Math.cos(a[0]*Math.PI/180);
+  return (Math.atan2(dx,dy)*180/Math.PI+360)%360;
+}
+function haversineM(a,b){
+  const R=6371000, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(b[0]-a[0]), dLon=toRad(b[1]-a[1]);
+  const s = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function arrowIcon(color,deg){
+  return L.divIcon({className:'',html:`<div class="arrow-ico" style="color:${color};transform:rotate(${deg}deg);">▲</div>`,iconSize:[13,13],iconAnchor:[6,6]});
+}
+function gmapsPlaceUrl(poi){
+  return `https://www.google.com/maps/search/?api=1&query=${poi.lat},${poi.lon}(${encodeURIComponent(poi.name)})`;
+}
+function gmapsUrl(pois){
+  if(pois.length<2) return gmapsPlaceUrl(pois[0]);
+  const o = pois[0], d = pois[pois.length-1];
+  const wps = pois.slice(1,-1).map(p=>`${p.lat},${p.lon}`).join('|');
+  return `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}` + (wps?`&waypoints=${encodeURIComponent(wps)}`:'') + `&travelmode=driving`;
+}
+function popupHtml(day, poi, i){
+  const pills = [];
+  if(poi.t) pills.push(`⏱ ${poi.t}`);
+  if(poi.sleep) pills.push('overnight');
+  if(poi.offroad) pills.push('light off-road');
+  if(poi.shop) pills.push('shopping');
+  if(poi.watch) pills.push('weather-sensitive');
+  return `<div class="poi-popup"><h3>${poi.ico||''} ${poi.name}</h3>
+    <div class="meta">${day.label} · stop ${i+1} of ${day.pois.length}</div>
+    <div class="desc">${poi.desc||''}${poi.tips?`<br><br><b>Tip:</b> ${poi.tips}`:''}</div>
+    <div>${pills.map(p=>`<span class="pill">${p}</span>`).join('')}</div>
+    <div style="margin-top:6px;"><a href="${gmapsPlaceUrl(poi)}" target="_blank" rel="noopener">Open in Google Maps ↗</a></div></div>`;
+}
+
+const dayLayers = {}, plannedLines = {}, dayRoutes = {}, dayVisible = {}, markerRefs = {};
+let plannedOn = true;
+
+TRIP.days.forEach(day=>{
+  dayVisible[day.id] = true;
+  const group = L.layerGroup().addTo(map);
+  const latlngs = [];
+  day.pois.forEach((poi,i)=>{
+    const marker = L.marker([poi.lat,poi.lon], {icon: poiIcon(day.color, poi, i*0.3)});
+    marker.bindPopup(popupHtml(day, poi, i));
+    marker.addTo(group);
+    markerRefs[poi.name+'_'+day.id] = marker;
+    latlngs.push([poi.lat,poi.lon]);
+  });
+  dayLayers[day.id] = group;
+  if(latlngs.length>1){
+    plannedLines[day.id] = L.polyline(latlngs, {color:'#8fa3bd', weight:2, opacity:.55, dashArray:'4 8'});
+    if(plannedOn) plannedLines[day.id].addTo(map);
+  }
+});
+
+function fitAll(){
+  const all = [];
+  TRIP.days.forEach(d=>{ if(dayVisible[d.id]){ all.push(...dayLayers[d.id].getLayers()); if(dayRoutes[d.id]) all.push(dayRoutes[d.id].base); } });
+  if(all.length) map.fitBounds(L.featureGroup(all).getBounds().pad(.15));
+}
+function fitDay(id){
+  const g = dayLayers[id];
+  if(g && g.getLayers().length) map.fitBounds(L.featureGroup(g.getLayers()).getBounds().pad(.25));
+}
+document.getElementById('btn-fit').addEventListener('click', fitAll);
+
+const statusEl = document.getElementById('route-status');
+let totalMeters=0, totalSeconds=0;
+
+function animateDraw(line, coords, ms){
+  const t0 = performance.now();
+  function frame(now){
+    const p = Math.min(1, (now-t0)/ms);
+    const n = Math.max(2, Math.floor(coords.length * p));
+    line.setLatLngs(coords.slice(0, n));
+    if(p < 1) requestAnimationFrame(frame);
+    else line.setLatLngs(coords);
+  }
+  requestAnimationFrame(frame);
+}
+
+function drawRoute(day, coords, meters, seconds, reveal){
+  const base = L.polyline(reveal?[coords[0],coords[0]]:coords, {color:day.color, weight:6, opacity:.6, lineJoin:'round'}).addTo(map);
+  const flow = L.polyline(coords, {color:day.color, weight:3.5, opacity:1, dashArray:'12 18', className:'route-flow', lineJoin:'round'}).addTo(map);
+  const arrows = L.layerGroup().addTo(map);
+  const step = Math.max(1, Math.floor(coords.length/14));
+  for(let i=step;i<coords.length-1;i+=step){
+    L.marker(coords[i], {icon:arrowIcon(day.color, bearing(coords[i],coords[i+1])), interactive:false}).addTo(arrows);
+  }
+  if(reveal) animateDraw(base, coords, 1100);
+
+  const km = meters ? (meters/1000).toFixed(0) : day.km;
+  const hrs = seconds ? seconds/3600 : null;
+  const timeTxt = hrs ? (hrs<1 ? Math.round(hrs*60)+' min' : hrs.toFixed(1)+'h') : '—';
+  base.bindPopup(`<div class="poi-popup"><h3>Live route — ${day.label}</h3><div class="desc">${day.date}<br><b>Real roads: ${km} km · ${timeTxt} driving</b><br>Planned estimate: ${day.drive}<br><br><a href="${gmapsUrl(day.pois)}" target="_blank" rel="noopener">Open in Google Maps ↗</a></div></div>`);
+  dayRoutes[day.id] = {base, flow, arrows, coords};
+
+  const cell = document.getElementById('rt-'+day.id);
+  if(cell) cell.innerHTML = `<b style="color:var(--accent)">${km} km · ${timeTxt}</b>`;
+  const lk = document.getElementById('lgkm-'+day.id);
+  if(lk) lk.textContent = km+' km';
+  if(!dayVisible[day.id]){ map.removeLayer(base); map.removeLayer(flow); map.removeLayer(arrows); }
+}
+
+async function routeDay(day, reveal){
+  if(!day.pois || day.pois.length<2){ return true; }
+  const cs = day.pois.map(p=>`${p.lon},${p.lat}`).join(';');
+  try{
+    const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${cs}?overview=full&geometries=geojson&steps=false`);
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    if(!j.routes || !j.routes.length) throw 0;
+    const rt = j.routes[0];
+
+    if(rt.legs && rt.legs.length === day.pois.length - 1){
+      for(let i=0;i<rt.legs.length;i++){
+        const straight = haversineM([day.pois[i].lat,day.pois[i].lon],[day.pois[i+1].lat,day.pois[i+1].lon]);
+        if(rt.legs[i].distance > Math.max(straight*3, 15000)){
+          throw new Error('leg-detour:'+day.pois[i].name+'→'+day.pois[i+1].name);
+        }
+      }
+    }
+
+    const coords = rt.geometry.coordinates.map(c=>[c[1],c[0]]);
+    totalMeters += rt.distance; totalSeconds += rt.duration;
+    drawRoute(day, coords, rt.distance, rt.duration, reveal);
+    return true;
+  }catch(e){
+    drawRoute(day, day.pois.map(p=>[p.lat,p.lon]), null, null, reveal);
+    return false;
+  }
+}
+
+async function loadRoutes(reveal){
+  totalMeters=0; totalSeconds=0;
+  Object.values(dayRoutes).forEach(r=>{ map.removeLayer(r.base); map.removeLayer(r.flow); map.removeLayer(r.arrows); });
+  let ok=0, fail=0;
+  for(const day of TRIP.days){
+    (await routeDay(day, reveal)) ? ok++ : fail++;
+    statusEl.style.opacity='1';
+    statusEl.textContent = `Routing real roads… ${ok+fail}/${TRIP.days.length}`;
+    if(reveal) await new Promise(r=>setTimeout(r, 420));
+  }
+  if(fail===0){
+    statusEl.textContent = `Live routes: ${(totalMeters/1000).toFixed(0)} km · ${(totalSeconds/3600).toFixed(1)}h driving`;
+    document.getElementById('total-km').textContent = `${(totalMeters/1000).toFixed(0)} km / ≈${(totalSeconds/3600).toFixed(1)}h`;
+    const rtot = document.getElementById('rt-total');
+    if(rtot) rtot.innerHTML = `<b style="color:var(--accent)">${(totalMeters/1000).toFixed(0)} km · ${(totalSeconds/3600).toFixed(1)}h</b>`;
+  } else if(ok>0){
+    statusEl.textContent = `${ok} live routed, ${fail} straight-line fallback`;
+  } else {
+    statusEl.textContent = 'Routing service unreachable — showing planned lines only';
+  }
+  setTimeout(()=>{ statusEl.style.opacity='.6'; }, 4500);
+  fitAll();
+}
+loadRoutes(true);
+document.getElementById('btn-reveal').addEventListener('click', ()=>loadRoutes(true));
+
+document.getElementById('map-legend').innerHTML =
+  TRIP.days.map(d=>`<div class="mlg" title="Day ${d.id} — ${d.date}"><span class="msw" style="background:${d.color}"></span>Day ${d.id} — ${d.date.length>28?d.date.slice(0,26)+'…':d.date}</div>`).join('') +
+  `<div class="mdiv"></div>
+   <div class="mlg"><span class="msw" style="background:transparent;border-top:2px dotted #8fa3bd;height:0"></span>Planned (straight)</div>
+   <div class="mlg">▲ direction of travel</div>
+   <div class="mlg">◉ pulsing = overnight stop</div>`;
+
+const legendRows = document.getElementById('legend-rows');
+legendRows.innerHTML = TRIP.days.map(d =>
+  `<div class="lg-row" data-day="${d.id}" title="${d.label} — ${d.date} (${d.drive})"><span class="lg-swatch" style="background:${d.color}"></span>Day ${d.id}<span class="lg-km" id="lgkm-${d.id}">${d.km?d.km+' km':'local'}</span></div>`
+).join('');
+
+function setDayVisible(id, vis){
+  dayVisible[id] = vis;
+  const row = legendRows.querySelector(`.lg-row[data-day="${id}"]`);
+  if(row) row.classList.toggle('off', !vis);
+  const r = dayRoutes[id], pl = plannedLines[id];
+  if(vis){
+    dayLayers[id].addTo(map);
+    if(r){ r.base.addTo(map); r.flow.addTo(map); r.arrows.addTo(map); }
+    if(pl && plannedOn) pl.addTo(map);
+  } else {
+    map.removeLayer(dayLayers[id]);
+    if(r){ map.removeLayer(r.base); map.removeLayer(r.flow); map.removeLayer(r.arrows); }
+    if(pl) map.removeLayer(pl);
+  }
+}
+legendRows.querySelectorAll('.lg-row').forEach(row => {
+  row.addEventListener('click', () => {
+    const id = parseInt(row.dataset.day, 10);
+    const willShow = row.classList.contains('off');
+    if(willShow){ TRIP.days.forEach(d=>setDayVisible(d.id, d.id===id)); }
+    else { setDayVisible(id, false); }
+    fitDay(id);
+  });
+});
+document.getElementById('btn-showall').addEventListener('click', ()=>{
+  TRIP.days.forEach(d=>setDayVisible(d.id, true));
+  fitAll();
+});
+
+document.getElementById('btn-anim').addEventListener('click', ()=>{
+  animOnState = !animOnState;
+  const b = document.getElementById('btn-anim');
+  b.textContent = animOnState ? '⏸ Pause flow' : '▶ Resume flow';
+  b.classList.toggle('on', animOnState);
+  document.querySelectorAll('.route-flow').forEach(el=>{ el.style.animationPlayState = animOnState?'running':'paused'; });
+});
+let animOnState = true;
+
+let carMarker=null, driveTimer=null, driving=false, driveSpeed=1;
+function setRouteFlowSpeed(){
+  document.querySelectorAll('.route-flow').forEach(el=>{ el.style.animationDuration = (12/driveSpeed)+'s'; });
+}
+document.querySelectorAll('.speed-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.speed-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    driveSpeed = parseFloat(btn.dataset.speed);
+    setRouteFlowSpeed();
+  });
+});
+function stopDrive(){
+  driving=false;
+  if(driveTimer){ clearInterval(driveTimer); driveTimer=null; }
+  if(carMarker){ map.removeLayer(carMarker); carMarker=null; }
+  document.getElementById('btn-drive').textContent='▶ Drive whole trip';
+}
+function driveDay(day, done){
+  const r = dayRoutes[day.id];
+  if(!r || r.coords.length<2){ done(); return; }
+  const coords = r.coords;
+  let pos=0;
+  const baseStep = Math.max(0.3, coords.length/130);
+  let tick=0;
+  if(carMarker) map.removeLayer(carMarker);
+  carMarker = L.marker(coords[0], {
+    icon:L.divIcon({className:'',html:'<div style="font-size:22px;filter:drop-shadow(0 0 4px #000);">🚙</div>',iconSize:[22,22],iconAnchor:[11,11]}),
+    zIndexOffset:1000
+  }).addTo(map);
+  carMarker.bindTooltip(`${day.label} — ${day.date}`, {permanent:true, direction:'top', offset:[0,-14]}).openTooltip();
+  driveTimer = setInterval(()=>{
+    if(!driving) return;
+    pos += baseStep * driveSpeed;
+    const i = Math.floor(pos);
+    if(i >= coords.length){ clearInterval(driveTimer); driveTimer=null; done(); return; }
+    carMarker.setLatLng(coords[i]);
+    tick++;
+    if(tick % 10 === 0) map.panTo(coords[i], {animate:true, duration:.4});
+  }, 40);
+}
+document.getElementById('btn-drive').addEventListener('click', ()=>{
+  if(driving){ stopDrive(); return; }
+  driving = true;
+  document.getElementById('btn-drive').textContent='⏹ Stop';
+  const seq = TRIP.days.filter(d=>dayVisible[d.id] && d.pois && d.pois.length>1);
+  let k=0;
+  const next = ()=>{
+    if(!driving || k>=seq.length){ stopDrive(); return; }
+    const d = seq[k++];
+    fitDay(d.id);
+    setTimeout(()=>driveDay(d,next), 500);
+  };
+  next();
+});
+
+const container = document.getElementById('day-groups');
+TRIP.days.forEach(day=>{
+  const g = document.createElement('div');
+  g.className='day-group';
+  g.innerHTML = `
+    <div class="day-header">
+      <span class="day-dot" style="background:${day.color}">${day.id}</span>
+      <span>${day.label}</span>
+      <span class="km-badge">${day.km>0?day.km+' km':'local'}</span>
+      <span class="date">${day.date}</span>
+    </div>
+    <div class="day-body">
+      <div style="font-size:11.5px;color:var(--sub);line-height:1.5;margin-bottom:8px;">${day.summary||''}</div>
+      <div class="sched">
+        ${(day.pois||[]).map((p,i)=>`<div class="s-row" data-name="${p.name}" data-day="${day.id}">
+          <span class="s-time">${p.t||''}</span><span>${p.ico||'•'}</span>
+          <span>${p.name}${p.sleep?'<span class="tag sleep">sleep</span>':''}${p.watch?'<span class="tag watch">weather</span>':''}${p.offroad?'<span class="tag offroad">off-road</span>':''}${p.shop?'<span class="tag shop">shop</span>':''}</span>
+        </div>`).join('')}
+      </div>
+      ${day.pois && day.pois.length ? `<a class="gmaps-btn" href="${gmapsUrl(day.pois)}" target="_blank" rel="noopener">Day ${day.id} in Google Maps</a>` : ''}
+      ${day.pois && day.pois.length>1 ? `<button class="ctrl-btn drive-one" data-day="${day.id}">▶ Drive this day</button>` : ''}
+    </div>`;
+  container.appendChild(g);
+  g.querySelector('.day-header').addEventListener('click', ()=>{
+    g.classList.toggle('open');
+    document.querySelectorAll('.day-group').forEach(x=>x.classList.remove('sel'));
+    g.classList.add('sel');
+    fitDay(day.id);
+  });
+  g.querySelectorAll('.s-row').forEach(el=>{
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      const m = markerRefs[el.dataset.name+'_'+el.dataset.day];
+      if(m){ map.setView(m.getLatLng(), 12, {animate:true}); m.openPopup(); }
+    });
+  });
+  const driveBtn = g.querySelector('.drive-one');
+  if(driveBtn) driveBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    stopDrive(); driving=true;
+    document.getElementById('btn-drive').textContent='⏹ Stop';
+    fitDay(day.id);
+    setTimeout(()=>driveDay(day, stopDrive), 500);
+  });
+});
+if(container.querySelector('.day-group')) container.querySelector('.day-group').classList.add('open');
+
+(function(){
+  const planned = TRIP.days.reduce((a,d)=>a+(d.km||0),0);
+  document.getElementById('stat-planned-km').textContent = `≈${planned} km`;
+  document.getElementById('stat-driving-days').textContent = `${TRIP.days.filter(d=>d.km>0).length} of ${TRIP.days.length}`;
+})();
+
+(function(){
+  const rz=document.getElementById('resizer'), sb=document.getElementById('sidebar'), pm=document.getElementById('pane-map');
+  let dragging=false;
+  function isRow(){ return window.innerWidth<=900; }
+  function onMove(clientX, clientY){
+    if(!dragging) return;
+    const rect = pm.getBoundingClientRect();
+    if(isRow()){
+      const h = Math.min(Math.max(clientY-rect.top,120), rect.height-120);
+      sb.style.height = h+'px'; sb.style.maxHeight = h+'px';
+    } else {
+      const w = Math.min(Math.max(clientX-rect.left,220), rect.width-260);
+      sb.style.width = w+'px';
+    }
+    map.invalidateSize();
+  }
+  rz.addEventListener('mousedown', ()=>{ dragging=true; document.body.style.userSelect='none'; });
+  window.addEventListener('mouseup', ()=>{ dragging=false; document.body.style.userSelect=''; });
+  window.addEventListener('mousemove', e=>onMove(e.clientX, e.clientY));
+  rz.addEventListener('touchstart', ()=>{ dragging=true; }, {passive:true});
+  window.addEventListener('touchend', ()=>{ dragging=false; });
+  window.addEventListener('touchmove', e=>{ const t=e.touches[0]; onMove(t.clientX, t.clientY); }, {passive:true});
+})();
+
+function sizeMapPane(){
+  document.getElementById('app').style.height = (window.innerHeight - document.getElementById('topbar').offsetHeight)+'px';
+  map.invalidateSize();
+}
+function showView(view){
+  const isMap = view==='map';
+  document.body.classList.toggle('map-mode', isMap);
+  document.body.classList.toggle('details-mode', !isMap);
+  document.getElementById('tab-map').classList.toggle('active', isMap);
+  document.getElementById('tab-details').classList.toggle('active', !isMap);
+  if(isMap){ requestAnimationFrame(sizeMapPane); }
+}
+document.getElementById('tab-map').addEventListener('click', ()=>showView('map'));
+document.getElementById('tab-details').addEventListener('click', ()=>showView('details'));
+window.addEventListener('resize', ()=>{ if(document.body.classList.contains('map-mode')) sizeMapPane(); });
+sizeMapPane();
+
+if(TRIP.alternates && TRIP.alternates.length){
+  const altLayer = L.layerGroup();
+  TRIP.alternates.forEach(poi=>{
+    const m = L.marker([poi.lat,poi.lon], {icon: poiIcon('#b39dff', {...poi, sleep:false}, 0)});
+    m.bindPopup(`<div class="poi-popup"><h3>${poi.ico||''} ${poi.name}</h3><div class="meta">Optional / alternate</div><div class="desc">${poi.desc||''}</div><a href="${gmapsPlaceUrl(poi)}" target="_blank" rel="noopener" style="font-size:11px;">Open in Google Maps ↗</a></div>`);
+    m.addTo(altLayer);
+  });
+  const altToggle = document.getElementById('alt-toggle');
+  if(altToggle) altToggle.addEventListener('change', e=>{
+    if(e.target.checked){ altLayer.addTo(map); map.fitBounds(altLayer.getBounds().pad(.2)); }
+    else map.removeLayer(altLayer);
+  });
+}
+
+(function(){
+  const rt = document.getElementById('route-table');
+  if(rt){
+    TRIP.days.forEach(d=>{
+      rt.insertAdjacentHTML('beforeend', `<tr><td>${d.id}</td><td>${d.date}</td><td class="num">${d.drive}</td><td class="num" id="rt-${d.id}">—</td><td>${d.pois&&d.pois.length?`<a class="gmaps-btn" href="${gmapsUrl(d.pois)}" target="_blank" rel="noopener">Google Maps</a>`:''}</td></tr>`);
+    });
+    const planned = TRIP.days.reduce((a,d)=>a+(d.km||0),0);
+    rt.insertAdjacentHTML('beforeend', `<tr><td colspan="2"><b>Total</b></td><td class="num"><b>≈${planned} km</b></td><td id="rt-total"><b>—</b></td><td></td></tr>`);
+  }
+  const ib = document.getElementById('itinerary-body');
+  if(ib && !ib.innerHTML.trim()){
+    ib.innerHTML = TRIP.days.map(d=>`<h3 style="margin-bottom:2px;">${d.label} — ${d.date}</h3><div style="color:var(--sub);font-size:12.5px;margin-bottom:10px;">${d.summary||''}</div>`).join('');
+  }
+  const hc = document.getElementById('hotel-cards');
+  if(hc && TRIP.hotels && TRIP.hotels.length){
+    hc.innerHTML = TRIP.hotels.map(h=>`<div class="card"><div class="card-top"><h3>🛏 ${h.name}</h3><span class="day-chip">${h.nights||''}</span></div><div class="desc" style="font-size:12.5px;">${h.desc||''}</div><div class="price">$${h.priceLow||''}–${h.priceHigh||''} / night</div>${(h.bookingLinks||[]).map(l=>`<a class="gmaps-btn" href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</div>`).join('');
+  }
+  const qn = document.getElementById('quick-nav');
+  if(qn){
+    document.querySelectorAll('#pane-details > details').forEach(d=>{
+      qn.insertAdjacentHTML('beforeend', `<a href="#${d.id}">${d.querySelector('summary').textContent}</a>`);
+    });
+  }
+})();
+</script>
+</body>
+</html>

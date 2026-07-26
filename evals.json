@@ -1,0 +1,23 @@
+{
+  "skill_name": "trip-dashboard",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "me and 3 buddies are renting one SUV and doing a loop through southern Utah national parks - Zion, Bryce Canyon, Capitol Reef, and Arches - starting and ending in Las Vegas, over 7 days in April. we don't want to backtrack on any road if we can help it. can you make us something like an interactive plan we can all look at, with the driving routes and where we're stopping each day?",
+      "expected_output": "A single self-contained HTML file with a live-routed map (Leaflet/OSM) showing a 7-day loop from Las Vegas through the four parks and back, day-colored routes with real OSRM-routed distances (not just straight lines), POI markers for named attractions in each park, a day-by-day itinerary tab, hotel/lodging suggestions, and a budget section. The route should genuinely avoid repeating roads where geographically possible, and the assistant should flag it in prose if any short unavoidable segment is shared.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "planning a 10 day trip through italy for me and my wife, no car - trains and walking only. want to hit rome, florence, cinque terre, and venice. we like food and wine more than museums, mid-range budget (not backpacker, not luxury). can you put together a visual itinerary?",
+      "expected_output": "A single self-contained HTML dashboard covering a 10-day train-based Italy itinerary across the 4 named cities, with a map showing city-to-city legs (not necessarily driving routes, since transport is train), POIs weighted toward food/wine/restaurants over museums, a day-by-day tab, mid-range hotel suggestions with price bands, and a budget section reflecting a non-luxury non-backpacker level. Should not include car-rental or driving-route content since this trip has no car.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "hey can you help me build a trip dashboard for a family trip - me, my wife, and our 2 kids (8 and 11) - to the Oregon coast for 5 days this summer, driving from Portland. want it kid-friendly, not too much driving each day, and some budget breakdown since we're not made of money lol",
+      "expected_output": "A single self-contained HTML dashboard for a 5-day Portland-based Oregon coast road trip, family/kid-friendly POI selections (beaches, tide pools, aquariums, easy hikes - not adult-oriented nightlife or wine stops), modest daily driving distances appropriate for young kids, a day-by-day tab, a budget section reflecting a cost-conscious family (not luxury), and packing/checklist sections appropriate for a coastal summer family trip.",
+      "files": []
+    }
+  ]
+}
