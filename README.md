@@ -6,6 +6,10 @@ A Claude Agent Skill that turns "plan me a trip" into a single, self-contained, 
 
 *The demo trip (`examples/demo-trip.html`) — Map & Routes tab with live-routed days and playback controls.*
 
+![Map & Routes — day itinerary](assets/trip4.png)
+
+*Map & Routes tab — day sidebar with timed stops, Google Maps link, and Drive this day.*
+
 ![Full Trip Plan — overview](assets/trip2.png)
 
 *Full Trip Plan tab — trip overview with planned vs live route legend and road notes.*
@@ -60,7 +64,8 @@ trip-dashboard-skill/
 │   ├── dashboard_template.html      (the reusable engine — map, routing, playback, layout)
 │   ├── trip1.png                    (README screenshot — Map & Routes)
 │   ├── trip2.png                    (README screenshot — Trip overview)
-│   └── trip3.png                    (README screenshot — Day-by-day itinerary)
+│   ├── trip3.png                    (README screenshot — Day-by-day itinerary)
+│   └── trip4.png                    (README screenshot — Day sidebar on map)
 ├── examples/
 │   └── demo-trip.html               (a working demo you can open right now)
 ├── scripts/
