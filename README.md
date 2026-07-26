@@ -1,83 +1,126 @@
-# trip-dashboard
+# Trip Planner Dashboard
 
-A Claude Agent Skill that turns "plan me a trip" into a single, self-contained, interactive HTML dashboard — a live-routed map on one tab, and a full written trip plan (itinerary, hotels, budget, packing, safety) on the other. No server, no API key, no build step. Everything runs client-side off free services: OpenStreetMap tiles, the public OSRM routing API, and Google Maps deep-links.
+![Trip Planner Dashboard](assets/tripIntro.jpeg)
 
-![Map & Routes tab](assets/trip1.png)
+An AI **skill** that turns “plan me a trip” into one HTML file you can open in any browser. You get a live map on one tab and a full written plan on the other (days, hotels, budget, packing, safety). Works with Claude, Cursor, and other tools that support skills. No server. No API key. No build step. It uses free map and routing services in the browser.
 
-*The demo trip (`examples/demo-trip.html`) — Map & Routes tab with live-routed days and playback controls.*
+![Map and Routes tab](assets/trip1.png)
 
-![Map & Routes — day itinerary](assets/trip4.png)
+*Demo trip. Map and Routes tab with live routes and playback controls.*
 
-*Map & Routes tab — day sidebar with timed stops, Google Maps link, and Drive this day.*
+![Map and Routes day itinerary](assets/trip4.png)
 
-![Full Trip Plan — overview](assets/trip2.png)
+*Map and Routes tab. Day list with stops, Google Maps link, and Drive this day.*
 
-*Full Trip Plan tab — trip overview with planned vs live route legend and road notes.*
+![Full Trip Plan overview](assets/trip2.png)
 
-![Full Trip Plan — itinerary](assets/trip3.png)
+*Full Trip Plan tab. Trip overview and road notes.*
 
-*Full Trip Plan tab — day-by-day itinerary, vehicle options, and the rest of the written plan.*
+![Full Trip Plan itinerary](assets/trip3.png)
+
+*Full Trip Plan tab. Day-by-day itinerary and vehicle options.*
 
 ## Features
 
-- **Live-routed map.** Each day's route is drawn twice: a dotted "planned" straight line (the intent — which stops, in what order) and a thick "live" line calculated on load by the OSRM routing engine following actual roads, with measured km and drive time. The dashboard explains the difference to the traveler so they know which number to trust.
-- **Detour-safe routing.** Public routing data doesn't always have brand-new or resurfaced roads tagged as drivable — when that happens, naive routing tools silently invent a huge, wrong detour instead of erroring. This skill checks every routed leg against the straight-line distance between its endpoints and falls back to the planned line if a leg looks physically impossible, so a bogus multi-hour detour never gets presented as fact.
-- **Drive-the-trip playback.** An animated car marker drives each day's route in sequence on request, with a 0.25×–4× speed control, plus an ambient flowing-dash animation on every route that can be paused and resumed.
-- **Day-by-day itinerary.** Colour-coded per day, with timed POI stops, tips, and tags for overnight stays, weather-sensitive legs, light off-road sections, and shopping stops. Every day links out to Google Maps with turn-by-turn navigation.
-- **Transportation costs.** Whatever fits the trip — rental vehicle comparisons (car/SUV/4x4) with daily rates, train fares and routes, or flight segments — plus a running fuel/ticket cost estimate.
-- **Hotels & lodging** with price bands and booking links, sized to the group.
-- **Budget, food, packing, and a pre-trip checklist** — the practical sections a traveler actually uses in the weeks before departure.
-- **Safety & fallbacks** — concrete alternates if a pass closes or weather turns, not generic "be careful" advice.
-- **Usable on any screen.** A day-isolation legend, a draggable divider between the map and the sidebar, and tooltips on anything that gets visually truncated.
+- **Live-routed map.** Each day shows a dotted planned line and a thick live line on real roads, with distance and drive time.
+- **Detour-safe routing.** If the live route looks impossible, the dashboard falls back to the planned line instead of showing a bad detour.
+- **Drive-the-trip playback.** Watch a marker drive the route. Change speed. Pause or resume the flowing route animation.
+- **Day-by-day itinerary.** Colour by day, with stops, tips, and a Google Maps link for each day.
+- **Transportation costs.** Cars, trains, or flights, with rough price ranges.
+- **Hotels and lodging.** Price bands and booking links for your group size.
+- **Budget, food, packing, and a pre-trip checklist.**
+- **Safety and fallbacks.** What to do if a road closes or weather turns bad.
+- **Works on phone and desktop.** Day filters, a draggable split view, and helpful tooltips.
 
 ## See it working
 
-Open [`examples/demo-trip.html`](examples/demo-trip.html) directly in a browser — no setup needed. It's a short 4-day San Francisco → Big Sur loop, chosen because it exercises every feature above, including one thing worth noting: Day 2 (Monterey → Big Sur → Monterey) is a genuine out-and-back, because Big Sur has no through road south. The dashboard says so plainly instead of pretending it's a loop — that honesty about real road geography is a core design goal of this skill, not an afterthought.
+Open [`examples/demo-trip.html`](examples/demo-trip.html) in your browser. No install needed. It is a short 4-day San Francisco to Big Sur demo. Day 2 goes Monterey to Big Sur and back, because there is no through road south. The plan says that clearly.
 
-## How to install
+## Where it works
 
-**Claude Code:** drop this whole folder into `~/.claude/skills/` (personal, available in every project) or `<project>/.claude/skills/` (shared with anyone who has that repo — e.g. by cloning this repo into that path).
+The same folder works with **Claude** and with **Cursor**. Other AI coding tools that support skills can use it too. Put the folder in that tool’s skills place, then ask it to plan a trip.
 
-**claude.ai:** download this repo as a zip, then upload it under Settings → Features → Skills (requires a Pro/Max/Team/Enterprise plan with code execution enabled). This is per-person — each user uploads their own copy; skills don't sync across accounts automatically.
+## How to use it with Claude
 
-**Claude API / Cowork:** upload via the Skills API (`/v1/skills`) if you're building on the API directly — it becomes available workspace-wide.
+### On the Claude website (claude.ai)
 
-There's no single official "app store" step that makes a custom skill available to everyone at once. See [Anthropic's Agent Skills docs](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) for the full picture of where skills are supported and how sharing scope differs per surface.
+1. Download this project as a zip file from GitHub (green **Code** button, then **Download ZIP**).
+2. Open [claude.ai](https://claude.ai) and sign in.
+3. Go to **Settings**, then **Features**, then **Skills**.
+4. Upload the zip. You need a plan that allows Skills (Pro, Max, Team, or Enterprise, with code execution on).
+5. Start a new chat.
+6. Type what you want, for example  
+   `Plan a 7-day road trip through Scotland for 4 of us, renting one car.`
+7. Answer any follow-up questions (dates, budget, and so on).
+8. When Claude finishes, open or download the HTML file it made. Double-click it to open in your browser.
 
-## How to use it
+### In Claude Code (on your computer)
 
-Once installed, just ask Claude to plan a trip in plain language — no special syntax needed:
+1. Download or copy this whole project folder.
+2. Put that folder here so Claude can find it  
+   - For every project on your computer  
+     `~/.claude/skills/trip-dashboard/`  
+   - Or only for one project  
+     `your-project-folder/.claude/skills/trip-dashboard/`
+3. Close Claude Code and open it again (or start a new chat).
+4. Type a trip request in normal words, like the example above.
+5. Open the HTML file Claude saves. Use your browser.
 
-- "Plan a 7-day road trip through Scotland for 4 of us, renting one car."
-- "We're doing a 10-day Italy trip by train — Rome, Florence, Cinque Terre, Venice. Food and wine over museums."
-- "Build me a family trip dashboard — Oregon coast, 5 days, driving from Portland, kid-friendly."
+### With the Claude API or Cowork
 
-Claude will ask for anything essential that's missing (dates, group size, transport, budget level), research real roads/coordinates/prices rather than guessing, and then build and save the dashboard file.
+1. Upload this skill with the Skills API.
+2. Ask for a trip plan in normal words, same as above.
 
-## Repository layout
+## How to use it with Cursor
+
+1. Download or copy this whole project folder.
+2. Put that folder here so Cursor can find it  
+   - For every project on your computer  
+     `~/.cursor/skills/trip-dashboard/`  
+   - Or only for one project  
+     `your-project-folder/.cursor/skills/trip-dashboard/`  
+   Tip. If you already put it under `.claude/skills/` for Claude, Cursor can often use that copy too. You do not need two copies.
+3. Restart Cursor, or open a new **Agent** chat.
+4. In Agent, type what you want in normal words. Examples  
+   - `Plan a 7-day road trip through Scotland for 4 of us, renting one car.`  
+   - `Build me a family trip dashboard. Oregon coast, 5 days, driving from Portland, kid-friendly.`  
+   You can also type `/trip-dashboard` and then describe the trip.
+5. Answer any questions the agent asks.
+6. When it is done, open the HTML file it created in your browser.
+
+## Things you can say (Claude or Cursor)
+
+- Plan a 7-day road trip through Scotland for 4 of us, renting one car.
+- We are doing a 10-day Italy trip by train. Rome, Florence, Cinque Terre, Venice. Food and wine over museums.
+- Build me a family trip dashboard. Oregon coast, 5 days, driving from Portland, kid-friendly.
+
+The AI may ask for dates, group size, transport, or budget if you left those out. Then it builds one HTML file you can open offline in a browser (the map still needs internet for tiles and live routing).
+
+## What is in this folder
 
 ```
 trip-dashboard-skill/
 ├── README.md                        (this file)
-├── SKILL.md                         (the skill definition Claude reads)
+├── SKILL.md                         (instructions the AI reads)
 ├── assets/
-│   ├── dashboard_template.html      (the reusable engine — map, routing, playback, layout)
-│   ├── trip1.png                    (README screenshot — Map & Routes)
-│   ├── trip2.png                    (README screenshot — Trip overview)
-│   ├── trip3.png                    (README screenshot — Day-by-day itinerary)
-│   └── trip4.png                    (README screenshot — Day sidebar on map)
+│   ├── dashboard_template.html      (map and plan engine)
+│   ├── tripIntro.jpeg               (README intro image)
+│   ├── trip1.png                    (screenshot, Map and Routes)
+│   ├── trip2.png                    (screenshot, Trip overview)
+│   ├── trip3.png                    (screenshot, Day-by-day itinerary)
+│   └── trip4.png                    (screenshot, Day sidebar on map)
 ├── examples/
-│   └── demo-trip.html               (a working demo you can open right now)
+│   └── demo-trip.html               (working demo you can open now)
 ├── scripts/
-│   └── verify_js.py                 (checks the generated dashboard's JS for syntax errors)
+│   └── verify_js.py                 (checks the dashboard JavaScript)
 └── evals/
-    └── evals.json                   (test prompts used while developing this skill)
+    └── evals.json                   (test prompts from development)
 ```
 
 ## Why this skill exists
 
-This was distilled from building a real 6-day, 3-jeep road trip dashboard for the country of Georgia across many rounds of back-and-forth feedback — fixing route directions that doubled back on themselves, catching a routing-data bug that silently invented a 300km detour, layout/scroll bugs, and adding a playback feature. Rather than solve each of those problems again for the next trip, the reusable parts got packaged here so any future "plan me a trip" request starts from a working, battle-tested engine instead of a blank file.
+It started as a real 6-day jeep trip plan for Georgia (the country). Many small fixes later (wrong turns, a fake 300 km detour, layout bugs, playback), the working parts were packed into this skill so the next “plan my trip” request starts from something that already works.
 
 ## License
 
-MIT — use it, fork it, adapt it for your own trips.
+MIT. Use it, fork it, adapt it for your own trips.
