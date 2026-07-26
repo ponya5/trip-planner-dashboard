@@ -2,7 +2,8 @@
 
 A Claude Agent Skill that turns "plan me a trip" into a single, self-contained, interactive HTML dashboard — a live-routed map on one tab, and a full written trip plan (itinerary, hotels, budget, packing, safety) on the other. No server, no API key, no build step. Everything runs client-side off free services: OpenStreetMap tiles, the public OSRM routing API, and Google Maps deep-links.
 
-![Trip dashboard screenshot](screenshot.png)
+<img width="1470" height="763" alt="image" src="https://github.com/user-attachments/assets/78e2e641-5ee3-4b32-9dba-691ad8972be1" />
+
 *The demo trip (`examples/demo-trip.html`) open in Chrome — Map & Routes tab.*
 
 ## Features
