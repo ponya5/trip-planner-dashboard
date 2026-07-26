@@ -2,9 +2,17 @@
 
 A Claude Agent Skill that turns "plan me a trip" into a single, self-contained, interactive HTML dashboard — a live-routed map on one tab, and a full written trip plan (itinerary, hotels, budget, packing, safety) on the other. No server, no API key, no build step. Everything runs client-side off free services: OpenStreetMap tiles, the public OSRM routing API, and Google Maps deep-links.
 
-<img width="1470" height="763" alt="image" src="https://github.com/user-attachments/assets/78e2e641-5ee3-4b32-9dba-691ad8972be1" />
+![Map & Routes tab](assets/trip1.png)
 
-*The demo trip (`examples/demo-trip.html`) open in Chrome — Map & Routes tab.*
+*The demo trip (`examples/demo-trip.html`) — Map & Routes tab with live-routed days and playback controls.*
+
+![Full Trip Plan — overview](assets/trip2.png)
+
+*Full Trip Plan tab — trip overview with planned vs live route legend and road notes.*
+
+![Full Trip Plan — itinerary](assets/trip3.png)
+
+*Full Trip Plan tab — day-by-day itinerary, vehicle options, and the rest of the written plan.*
 
 ## Features
 
@@ -49,7 +57,10 @@ trip-dashboard-skill/
 ├── README.md                        (this file)
 ├── SKILL.md                         (the skill definition Claude reads)
 ├── assets/
-│   └── dashboard_template.html      (the reusable engine — map, routing, playback, layout)
+│   ├── dashboard_template.html      (the reusable engine — map, routing, playback, layout)
+│   ├── trip1.png                    (README screenshot — Map & Routes)
+│   ├── trip2.png                    (README screenshot — Trip overview)
+│   └── trip3.png                    (README screenshot — Day-by-day itinerary)
 ├── examples/
 │   └── demo-trip.html               (a working demo you can open right now)
 ├── scripts/
