@@ -47,8 +47,8 @@ Works with **Claude**, **Cursor**, and other tools that support skills. Put this
 
 ## **Screenshots**
 
-<details>
-<summary><strong>Map and Routes</strong> (click to expand)</summary>
+<details open>
+<summary><strong>Map and Routes</strong> (click to collapse)</summary>
 
 <br />
 
@@ -62,8 +62,8 @@ Works with **Claude**, **Cursor**, and other tools that support skills. Put this
 
 </details>
 
-<details>
-<summary><strong>Full Trip Plan</strong> (click to expand)</summary>
+<details open>
+<summary><strong>Full Trip Plan</strong> (click to collapse)</summary>
 
 <br />
 
