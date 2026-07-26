@@ -1,8 +1,14 @@
 # Trip Planner Dashboard
 
-![Trip Planner Dashboard](assets/tripIntro.jpeg)
+<img src="assets/tripIntro.jpeg" alt="Trip Planner Dashboard" width="40%" />
 
 An AI **skill** that turns “plan me a trip” into one HTML file you can open in any browser. You get a live map on one tab and a full written plan on the other (days, hotels, budget, packing, safety). Works with Claude, Cursor, and other tools that support skills. No server. No API key. No build step. It uses free map and routing services in the browser.
+
+### **Personal note. Why I created this skill**
+
+I built this after planning a real 6-day jeep trip in Georgia (the country). The first versions had wrong turns, a fake 300 km detour from bad map data, layout bugs, and no easy way to “drive” the route on the map. After fixing those pieces over many rounds, I packed the working parts into this skill so the next “plan my trip” request starts from something that already works, not from a blank file.
+
+### **Screenshots**
 
 ![Map and Routes tab](assets/trip1.png)
 
@@ -20,7 +26,7 @@ An AI **skill** that turns “plan me a trip” into one HTML file you can open 
 
 *Full Trip Plan tab. Day-by-day itinerary and vehicle options.*
 
-## Features
+### **Features**
 
 - **Live-routed map.** Each day shows a dotted planned line and a thick live line on real roads, with distance and drive time.
 - **Detour-safe routing.** If the live route looks impossible, the dashboard falls back to the planned line instead of showing a bad detour.
@@ -32,31 +38,40 @@ An AI **skill** that turns “plan me a trip” into one HTML file you can open 
 - **Safety and fallbacks.** What to do if a road closes or weather turns bad.
 - **Works on phone and desktop.** Day filters, a draggable split view, and helpful tooltips.
 
-## See it working
+### **See it working**
 
 Open [`examples/demo-trip.html`](examples/demo-trip.html) in your browser. No install needed. It is a short 4-day San Francisco to Big Sur demo. Day 2 goes Monterey to Big Sur and back, because there is no through road south. The plan says that clearly.
 
-## Where it works
+### **Where it works**
 
 The same folder works with **Claude** and with **Cursor**. Other AI coding tools that support skills can use it too. Put the folder in that tool’s skills place, then ask it to plan a trip.
 
-## How to use it with Claude
+### **How to use it with Claude**
 
-### On the Claude website (claude.ai)
+#### **On the Claude website (claude.ai)**
 
-1. Download this project as a zip file from GitHub (green **Code** button, then **Download ZIP**).
-2. Open [claude.ai](https://claude.ai) and sign in.
-3. Go to **Settings**, then **Features**, then **Skills**.
-4. Upload the zip. You need a plan that allows Skills (Pro, Max, Team, or Enterprise, with code execution on).
-5. Start a new chat.
-6. Type what you want, for example  
+**How to get the zip file**
+
+1. Open this project’s page on GitHub.
+2. Click the green **Code** button near the top right.
+3. Click **Download ZIP**.
+4. Wait for the download to finish. You will get a file like `trip-dashboard-skill-main.zip` in your Downloads folder.
+5. Keep that zip as is. You do not need to unzip it for the website upload.
+
+**How to add the skill on claude.ai**
+
+1. Open [claude.ai](https://claude.ai) and sign in.
+2. Go to **Settings**, then **Features**, then **Skills**.
+3. Upload the zip you downloaded. You need a plan that allows Skills (Pro, Max, Team, or Enterprise, with code execution on).
+4. Start a new chat.
+5. Type what you want, for example  
    `Plan a 7-day road trip through Scotland for 4 of us, renting one car.`
-7. Answer any follow-up questions (dates, budget, and so on).
-8. When Claude finishes, open or download the HTML file it made. Double-click it to open in your browser.
+6. Answer any follow-up questions (dates, budget, and so on).
+7. When Claude finishes, open or download the HTML file it made. Double-click it to open in your browser.
 
-### In Claude Code (on your computer)
+#### **In Claude Code (on your computer)**
 
-1. Download or copy this whole project folder.
+1. Get the project folder. Either download the zip (steps above) and unzip it, or copy the folder if you already have it.
 2. Put that folder here so Claude can find it  
    - For every project on your computer  
      `~/.claude/skills/trip-dashboard/`  
@@ -66,14 +81,14 @@ The same folder works with **Claude** and with **Cursor**. Other AI coding tools
 4. Type a trip request in normal words, like the example above.
 5. Open the HTML file Claude saves. Use your browser.
 
-### With the Claude API or Cowork
+#### **With the Claude API or Cowork**
 
 1. Upload this skill with the Skills API.
 2. Ask for a trip plan in normal words, same as above.
 
-## How to use it with Cursor
+### **How to use it with Cursor**
 
-1. Download or copy this whole project folder.
+1. Get the project folder. Download the zip from GitHub (green **Code** button, then **Download ZIP**), unzip it, or copy the folder if you already have it.
 2. Put that folder here so Cursor can find it  
    - For every project on your computer  
      `~/.cursor/skills/trip-dashboard/`  
@@ -88,7 +103,7 @@ The same folder works with **Claude** and with **Cursor**. Other AI coding tools
 5. Answer any questions the agent asks.
 6. When it is done, open the HTML file it created in your browser.
 
-## Things you can say (Claude or Cursor)
+### **Things you can say (Claude or Cursor)**
 
 - Plan a 7-day road trip through Scotland for 4 of us, renting one car.
 - We are doing a 10-day Italy trip by train. Rome, Florence, Cinque Terre, Venice. Food and wine over museums.
@@ -96,7 +111,7 @@ The same folder works with **Claude** and with **Cursor**. Other AI coding tools
 
 The AI may ask for dates, group size, transport, or budget if you left those out. Then it builds one HTML file you can open offline in a browser (the map still needs internet for tiles and live routing).
 
-## What is in this folder
+### **What is in this folder**
 
 ```
 trip-dashboard-skill/
@@ -117,10 +132,6 @@ trip-dashboard-skill/
     └── evals.json                   (test prompts from development)
 ```
 
-## Why this skill exists
-
-It started as a real 6-day jeep trip plan for Georgia (the country). Many small fixes later (wrong turns, a fake 300 km detour, layout bugs, playback), the working parts were packed into this skill so the next “plan my trip” request starts from something that already works.
-
-## License
+### **License**
 
 MIT. Use it, fork it, adapt it for your own trips.
